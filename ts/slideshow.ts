@@ -16,10 +16,12 @@ interface ISlideshowSlideScope extends ng.IScope {
   visible: boolean;
   _next: () => boolean;
   _prev: () => boolean;
+  _transitioned: () => void;
 }
 
 interface ISlideshowSlideVideoScope extends ISlideshowSlideScope {
   _videoPlayed: boolean;
+  autoplay: string;
 }
 
 class SlideController {
@@ -46,6 +48,7 @@ class SlideshowController {
     this.$timeout(() => {
       this.slides[index].visible = true;
       this.$location.path("" + index);
+      if( angular.isFunction(this.slides[index]._transitioned)) this.slides[index]._transitioned();
     });
   }
   next(){
@@ -80,6 +83,7 @@ class SlideshowController {
   addSlide($scope: ISlideshowSlideScope) {
     if (this.slides.length == this.slideIndex) {
       $scope.visible = true;
+      this.showSlide(this.slideIndex);
     } else {
       $scope.visible = false;
     }
@@ -89,8 +93,7 @@ class SlideshowController {
     this.slidesLoadedPromise = this.$timeout( () => {
       if (this.slideIndex >= this.slides.length) {
         var index = this.slides.length - 1;
-        this.$location.path("" + index);
-        this.slides[index].visible = true;
+        this.showSlide(index);
         this.slideIndex = index;
       }
     });
@@ -182,7 +185,7 @@ function SlideshowSlide(): ng.IDirective {
 function SlideshowSlideVideo(): ng.IDirective {
   var directive: ng.IDirective = <ng.IDirective>{};
   directive.restrict = "AE";
-  directive.scope = { src: '=', customClasses: "@class" };
+  directive.scope = { src: '=', customClasses: "@class", autoplay: '@'};
   directive.transclude = true;
   directive.replace = true;
   directive.require = "^slideshow"
@@ -209,10 +212,16 @@ function SlideshowSlideVideo(): ng.IDirective {
       var returnValue = $scope._videoPlayed;
 
       if ($scope._videoPlayed == false) { playVideo(); }
-      
       $scope._videoPlayed = true;
 
       return returnValue;
+    }
+
+    $scope._transitioned = () => {
+      if($scope.autoplay == "true") {
+        var video: any = element.find("video")[0];
+        video.play();
+      }
     }
 
     $scope.$watch("visible", (nv) => {
