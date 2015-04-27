@@ -139,7 +139,7 @@ function Slideshow($window) {
             else if (e.keyCode == 39 || e.keyCode == 32 || e.keyCode == 34) {
                 slideController.next();
             }
-            else if (e.keyCode == 191 && e.shiftKey) {
+            else if ((e.keyCode == 191 && e.shiftKey) || e.keyCode == 190) {
                 slideController.toggleDebug();
             }
         });
@@ -184,6 +184,8 @@ function SlideshowSlideVideo() {
         };
         slideshowController.addSlide($scope);
         $scope._next = function () {
+            if ($scope.autoplay == "true")
+                return true;
             var returnValue = $scope._videoPlayed;
             if ($scope._videoPlayed == false) {
                 playVideo();

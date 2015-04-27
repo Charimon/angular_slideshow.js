@@ -157,7 +157,7 @@ function Slideshow($window: ng.IWindowService): ng.IDirective {
         slideController.prev();
       } else if (e.keyCode == 39 || e.keyCode == 32 || e.keyCode == 34) {
         slideController.next();
-      } else if (e.keyCode == 191 && e.shiftKey) {
+      } else if ( (e.keyCode == 191 && e.shiftKey) || e.keyCode == 190) {
         slideController.toggleDebug();
       }
     });
@@ -209,6 +209,8 @@ function SlideshowSlideVideo(): ng.IDirective {
     slideshowController.addSlide($scope);
 
     $scope._next = () => {
+      if ($scope.autoplay == "true") return true;
+
       var returnValue = $scope._videoPlayed;
 
       if ($scope._videoPlayed == false) { playVideo(); }
