@@ -10,6 +10,8 @@ interface ISlideshowScope extends ng.IScope {
   slideTime: number;
   showSlideTimer: boolean;
   showDebug: boolean;
+  next: () => void;
+  prev: () => void;
 }
 
 interface ISlideshowSlideScope extends ng.IScope {
@@ -147,7 +149,7 @@ function Slideshow($window: ng.IWindowService): ng.IDirective {
                          "<div class='slideshow-prep-timer'>{{totalTime | slideTime}}</div>" +
                          "<div class='slideshow-prep-timer-small' ng-show='showSlideTimer'>{{slideTime | slideTime}}</div>" +
                        "</div>" +
-                       "<div class='slideshow-content' ng-transclude ng-class='{showDebug:showDebug}'></div>";
+                       "<div class='slideshow-content' ng-swipe-left='next()' ng-swipe-right='prev()' ng-transclude ng-class='{showDebug:showDebug}'></div>";
   directive.controller = SlideshowController;
   directive.link = function($scope: ISlideshowScope, element: ng.IRootElementService, attrs, slideController: SlideshowController) {
     slideController.addSlideshow($scope);
@@ -161,6 +163,14 @@ function Slideshow($window: ng.IWindowService): ng.IDirective {
         slideController.toggleDebug();
       }
     });
+
+    $scope.next = () => {
+      slideController.next();
+    }
+
+    $scope.prev = () => {
+      slideController.prev();
+    }
     
     element.addClass("slideshow");
   }

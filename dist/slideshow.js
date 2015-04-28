@@ -128,7 +128,7 @@ function Slideshow($window) {
         "<div class='slideshow-prep-timer'>{{totalTime | slideTime}}</div>" +
         "<div class='slideshow-prep-timer-small' ng-show='showSlideTimer'>{{slideTime | slideTime}}</div>" +
         "</div>" +
-        "<div class='slideshow-content' ng-transclude ng-class='{showDebug:showDebug}'></div>";
+        "<div class='slideshow-content' ng-swipe-left='next()' ng-swipe-right='prev()' ng-transclude ng-class='{showDebug:showDebug}'></div>";
     directive.controller = SlideshowController;
     directive.link = function ($scope, element, attrs, slideController) {
         slideController.addSlideshow($scope);
@@ -143,6 +143,12 @@ function Slideshow($window) {
                 slideController.toggleDebug();
             }
         });
+        $scope.next = function () {
+            slideController.next();
+        };
+        $scope.prev = function () {
+            slideController.prev();
+        };
         element.addClass("slideshow");
     };
     return directive;
