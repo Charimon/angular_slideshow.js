@@ -14,9 +14,9 @@ interface ISlideshowScope extends ng.IScope {
 
 interface ISlideshowSlideScope extends ng.IScope {
   visible: boolean;
-  _next: () => boolean;
-  _prev: () => boolean;
-  _transitioned: () => void;
+  next: () => boolean;
+  prev: () => boolean;
+  shown: () => void;
 }
 
 interface ISlideshowSlideVideoScope extends ISlideshowSlideScope {
@@ -48,7 +48,7 @@ class SlideshowController {
     this.$timeout(() => {
       this.slides[index].visible = true;
       this.$location.path("" + index);
-      if( angular.isFunction(this.slides[index]._transitioned)) this.slides[index]._transitioned();
+      if( angular.isFunction(this.slides[index].shown)) this.slides[index].shown({$index:index});
     });
   }
   next(){
@@ -57,8 +57,8 @@ class SlideshowController {
     if (this.slides.length > 0 && this.shouldLoop) { nextIndex = (((this.slideIndex + 1) % this.slides.length) + this.slides.length) % this.slides.length; }
     else if (this.slides.length > 0 && this.slideIndex + 1 < this.slides.length) { nextIndex += 1; }
     
-    var nextMethod = this.slides[this.slideIndex]._next;
-    if (this.slideIndex != nextIndex && (!angular.isFunction(nextMethod) || nextMethod())) {
+    var nextMethod = this.slides[this.slideIndex].next;
+    if (this.slideIndex != nextIndex && (!angular.isFunction(nextMethod) || nextMethod({ $index: this.slideIndex, $nextIndex:nextIndex }))) {
       this.hideSlide(this.slideIndex);
       this.showSlide(nextIndex);
       this.slideIndex = nextIndex;
@@ -72,8 +72,8 @@ class SlideshowController {
     if (this.slides.length > 0 && this.shouldLoop) { prevIndex = (((this.slideIndex - 1) % this.slides.length) + this.slides.length) % this.slides.length; }
     else if (this.slides.length > 0 && this.slideIndex - 1 >= 0) { prevIndex -= 1; }
 
-    var prevMethod = this.slides[this.slideIndex]._prev;
-    if (this.slideIndex != prevIndex && (!angular.isFunction(prevMethod) || prevMethod())) {
+    var prevMethod = this.slides[this.slideIndex].prev;
+    if (this.slideIndex != prevIndex && (!angular.isFunction(prevMethod) || prevMethod({ $index: this.slideIndex, $prevIndex: prevIndex }))) {
       this.hideSlide(this.slideIndex);
       this.showSlide(prevIndex);
       this.slideIndex = prevIndex;
@@ -170,7 +170,7 @@ function Slideshow($window: ng.IWindowService): ng.IDirective {
 function SlideshowSlide(): ng.IDirective {
   var directive: ng.IDirective = <ng.IDirective>{};
   directive.restrict = "AE";
-  directive.scope = { customClasses:"@class"};
+  directive.scope = { customClasses: "@class", shown: "&shown", next: "&next", prev: "&prev" };
   directive.transclude = true;
   directive.replace = true;
   directive.require = "^slideshow"
@@ -178,6 +178,10 @@ function SlideshowSlide(): ng.IDirective {
   directive.controller = SlideController;
   directive.link = function($scope: ISlideshowSlideScope, element: ng.IRootElementService, attrs, slideshowController: SlideshowController) {
     slideshowController.addSlide($scope);
+
+    if (!angular.isDefined(attrs.shown)){ $scope.shown = null; }
+    if (!angular.isDefined(attrs.next)) { $scope.next = null; }
+    if (!angular.isDefined(attrs.prev)) { $scope.prev = null; }
   }
   return directive;
 }
@@ -185,7 +189,7 @@ function SlideshowSlide(): ng.IDirective {
 function SlideshowSlideVideo(): ng.IDirective {
   var directive: ng.IDirective = <ng.IDirective>{};
   directive.restrict = "AE";
-  directive.scope = { src: '=', customClasses: "@class", autoplay: '@'};
+  directive.scope = { src: '=', customClasses: "@class", autoplay: '@', shown: "&shown", next: "&next", prev: "&prev" };
   directive.transclude = true;
   directive.replace = true;
   directive.require = "^slideshow"
@@ -208,21 +212,29 @@ function SlideshowSlideVideo(): ng.IDirective {
 
     slideshowController.addSlide($scope);
 
-    $scope._next = () => {
-      if ($scope.autoplay == "true") return true;
+    if (!angular.isDefined(attrs.shown)) { $scope.shown = null; }
+    if (!angular.isDefined(attrs.next)) { $scope.next = null; }
+    if (!angular.isDefined(attrs.prev)) { $scope.prev = null; }
 
-      var returnValue = $scope._videoPlayed;
+    if($scope.next == null) {
+      $scope.next = () => {
+        if ($scope.autoplay == "true") return true;
 
-      if ($scope._videoPlayed == false) { playVideo(); }
-      $scope._videoPlayed = true;
+        var returnValue = $scope._videoPlayed;
 
-      return returnValue;
+        if ($scope._videoPlayed == false) { playVideo(); }
+        $scope._videoPlayed = true;
+
+        return returnValue;
+      }
     }
 
-    $scope._transitioned = () => {
-      if($scope.autoplay == "true") {
-        var video: any = element.find("video")[0];
-        video.play();
+    if($scope.shown == null) {
+      $scope.shown = () => {
+        if ($scope.autoplay == "true") {
+          var video: any = element.find("video")[0];
+          video.play();
+        }
       }
     }
 

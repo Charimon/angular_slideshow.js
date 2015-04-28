@@ -8,7 +8,7 @@
     }
   </style>
   <head>
-  <body ng-cloak>
+  <body ng-cloak ng-controller="SlidesController as slides">
     <slideshow>
       <div ng-include src="'slides.html'"></div>
     </slideshow>
@@ -18,6 +18,22 @@
   <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.0-rc.0/angular-animate.min.js" ></script>
   <script type="text/javascript" src="dist/slideshow.js"></script>
 
-  <script>angular.module("app", ["slideshow"]);</script>
+  <script>
+    angular.module("app", ["slideshow"]).controller("SlidesController", function(){
+      this.shown = function(index){
+        console.log("slide shown " + index);
+      };
+      this.next = function(index, nextIndex){
+        console.log("next clicked on " + index + " going to " + nextIndex);
+        //if you change this to false next click won't work
+        return true;  
+      }
+      this.prev = function(index, prevIndex){
+        console.log("prev clicked on " + index + " going to " + prevIndex);
+        //if you change this to false prev click won't work
+        return true;
+      }
+    });
+  </script>
 </html>
 

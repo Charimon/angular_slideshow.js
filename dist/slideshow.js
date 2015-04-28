@@ -28,8 +28,8 @@ var SlideshowController = (function () {
         this.$timeout(function () {
             _this.slides[index].visible = true;
             _this.$location.path("" + index);
-            if (angular.isFunction(_this.slides[index]._transitioned))
-                _this.slides[index]._transitioned();
+            if (angular.isFunction(_this.slides[index].shown))
+                _this.slides[index].shown({ $index: index });
         });
     };
     SlideshowController.prototype.next = function () {
@@ -40,8 +40,8 @@ var SlideshowController = (function () {
         else if (this.slides.length > 0 && this.slideIndex + 1 < this.slides.length) {
             nextIndex += 1;
         }
-        var nextMethod = this.slides[this.slideIndex]._next;
-        if (this.slideIndex != nextIndex && (!angular.isFunction(nextMethod) || nextMethod())) {
+        var nextMethod = this.slides[this.slideIndex].next;
+        if (this.slideIndex != nextIndex && (!angular.isFunction(nextMethod) || nextMethod({ $index: this.slideIndex, $nextIndex: nextIndex }))) {
             this.hideSlide(this.slideIndex);
             this.showSlide(nextIndex);
             this.slideIndex = nextIndex;
@@ -56,8 +56,8 @@ var SlideshowController = (function () {
         else if (this.slides.length > 0 && this.slideIndex - 1 >= 0) {
             prevIndex -= 1;
         }
-        var prevMethod = this.slides[this.slideIndex]._prev;
-        if (this.slideIndex != prevIndex && (!angular.isFunction(prevMethod) || prevMethod())) {
+        var prevMethod = this.slides[this.slideIndex].prev;
+        if (this.slideIndex != prevIndex && (!angular.isFunction(prevMethod) || prevMethod({ $index: this.slideIndex, $prevIndex: prevIndex }))) {
             this.hideSlide(this.slideIndex);
             this.showSlide(prevIndex);
             this.slideIndex = prevIndex;
@@ -150,7 +150,7 @@ function Slideshow($window) {
 function SlideshowSlide() {
     var directive = {};
     directive.restrict = "AE";
-    directive.scope = { customClasses: "@class" };
+    directive.scope = { customClasses: "@class", shown: "&shown", next: "&next", prev: "&prev" };
     directive.transclude = true;
     directive.replace = true;
     directive.require = "^slideshow";
@@ -158,13 +158,22 @@ function SlideshowSlide() {
     directive.controller = SlideController;
     directive.link = function ($scope, element, attrs, slideshowController) {
         slideshowController.addSlide($scope);
+        if (!angular.isDefined(attrs.shown)) {
+            $scope.shown = null;
+        }
+        if (!angular.isDefined(attrs.next)) {
+            $scope.next = null;
+        }
+        if (!angular.isDefined(attrs.prev)) {
+            $scope.prev = null;
+        }
     };
     return directive;
 }
 function SlideshowSlideVideo() {
     var directive = {};
     directive.restrict = "AE";
-    directive.scope = { src: '=', customClasses: "@class", autoplay: '@' };
+    directive.scope = { src: '=', customClasses: "@class", autoplay: '@', shown: "&shown", next: "&next", prev: "&prev" };
     directive.transclude = true;
     directive.replace = true;
     directive.require = "^slideshow";
@@ -183,22 +192,35 @@ function SlideshowSlideVideo() {
             };
         };
         slideshowController.addSlide($scope);
-        $scope._next = function () {
-            if ($scope.autoplay == "true")
-                return true;
-            var returnValue = $scope._videoPlayed;
-            if ($scope._videoPlayed == false) {
-                playVideo();
-            }
-            $scope._videoPlayed = true;
-            return returnValue;
-        };
-        $scope._transitioned = function () {
-            if ($scope.autoplay == "true") {
-                var video = element.find("video")[0];
-                video.play();
-            }
-        };
+        if (!angular.isDefined(attrs.shown)) {
+            $scope.shown = null;
+        }
+        if (!angular.isDefined(attrs.next)) {
+            $scope.next = null;
+        }
+        if (!angular.isDefined(attrs.prev)) {
+            $scope.prev = null;
+        }
+        if ($scope.next == null) {
+            $scope.next = function () {
+                if ($scope.autoplay == "true")
+                    return true;
+                var returnValue = $scope._videoPlayed;
+                if ($scope._videoPlayed == false) {
+                    playVideo();
+                }
+                $scope._videoPlayed = true;
+                return returnValue;
+            };
+        }
+        if ($scope.shown == null) {
+            $scope.shown = function () {
+                if ($scope.autoplay == "true") {
+                    var video = element.find("video")[0];
+                    video.play();
+                }
+            };
+        }
         $scope.$watch("visible", function (nv) {
             if (nv == false) {
                 $scope._videoPlayed = false;
